@@ -1,1 +1,396 @@
-Hello World!
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yamagata-inaka</title>
+<meta name="description" content="山形 × 田舎 × 超！バイブコーディング。カオス。">
+<style>
+  :root {
+    --ink: #111;
+    --paper: #fffbe8;
+    --rice: #9bd34a;
+    --cherry: #e0213b;
+    --snow: #f4f8ff;
+    --term: #0b0f0a;
+    --termfg: #6dff6d;
+    --yellow: #ffe14a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh;
+    font-family: "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+    color: var(--ink);
+    background:
+      repeating-linear-gradient(45deg, transparent 0 22px, rgba(0,0,0,.035) 22px 44px),
+      linear-gradient(160deg, var(--snow) 0%, #d9f2b0 45%, var(--rice) 100%);
+    overflow-x: hidden;
+  }
+  /* body に filter をかけると position:fixed の基準が変わるため、中身とキャンバスに個別にかける */
+  body.c3 main, body.c3 #rain { animation: hue 18s linear infinite; }
+  @keyframes hue { to { filter: hue-rotate(360deg); } }
+
+  /* 背景で降ってくるもの */
+  #rain {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  main {
+    position: relative; z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 16px 64px;
+    display: flex; flex-direction: column; gap: 28px;
+  }
+
+  /* タイトル */
+  header { text-align: center; }
+  .kicker {
+    display: inline-block;
+    background: var(--ink); color: var(--yellow);
+    padding: 4px 10px;
+    font-size: 13px; letter-spacing: .1em;
+    transform: rotate(-2deg);
+  }
+  h1 {
+    margin: 12px 0 4px;
+    font-size: clamp(40px, 12vw, 120px);
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: -.03em;
+    word-break: break-all;
+    text-shadow: 3px 0 var(--cherry), -3px 0 #22c3ff;
+    animation: jitter 2.4s steps(1) infinite;
+  }
+  @keyframes jitter {
+    0%, 92%, 100% { transform: none; }
+    93% { transform: translate(4px, -2px) skewX(-8deg); }
+    95% { transform: translate(-5px, 3px) skewX(6deg); }
+    97% { transform: translate(2px, 0) scaleY(1.1); }
+  }
+  .sub { font-size: clamp(14px, 3.6vw, 18px); margin: 8px 0 0; }
+  .sub b { background: var(--yellow); padding: 0 4px; }
+
+  /* 流れる帯 */
+  .tape {
+    margin: 0 -16px;
+    overflow: hidden;
+    background: var(--cherry); color: #fff;
+    border-block: 3px solid var(--ink);
+    transform: rotate(-1.5deg);
+    font-weight: 800;
+  }
+  .tape.rev { background: var(--ink); color: var(--yellow); transform: rotate(1deg); }
+  .tape > div {
+    display: inline-block;
+    white-space: nowrap;
+    padding: 8px 0;
+    animation: scroll 22s linear infinite;
+  }
+  .tape.rev > div { animation-direction: reverse; animation-duration: 30s; }
+  @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ステッカー群（flex-wrap で並べるので重ならない） */
+  .stickers {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 16px;
+  }
+  .sticker {
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    box-shadow: 5px 5px 0 var(--ink);
+    padding: 12px 14px;
+    max-width: 280px;
+    font-size: 15px;
+    transform: rotate(var(--r, 0deg));
+    transition: transform .2s;
+    cursor: pointer;
+    user-select: none;
+  }
+  .sticker:hover { transform: rotate(0deg) scale(1.06); }
+  .sticker .big { display: block; font-size: 28px; font-weight: 900; line-height: 1.2; }
+  body.c4 .sticker { animation: wobble 1.6s ease-in-out infinite alternate; }
+  @keyframes wobble { to { transform: rotate(calc(var(--r, 0deg) * -1)) translateY(-4px); } }
+
+  /* ターミナル */
+  .term {
+    background: var(--term); color: var(--termfg);
+    border: 3px solid var(--ink);
+    box-shadow: 8px 8px 0 var(--cherry);
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .term-bar {
+    display: flex; gap: 6px; align-items: center;
+    padding: 6px 10px;
+    background: #222; color: #aaa; font-size: 12px;
+  }
+  .term-bar i { width: 10px; height: 10px; border-radius: 50%; background: #f55; }
+  .term-bar i:nth-child(2) { background: #fc3; }
+  .term-bar i:nth-child(3) { background: #5d5; margin-right: 6px; }
+  #log {
+    margin: 0; padding: 10px 12px;
+    height: 15.5em;
+    overflow: hidden;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  #log .warn { color: var(--yellow); }
+  #log .flag { color: #ff6bd5; }
+  .cursor { animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* 操作パネル */
+  .panel {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    justify-content: center; align-items: center;
+  }
+  button {
+    font: inherit; font-weight: 900; font-size: 16px;
+    padding: 12px 18px;
+    border: 3px solid var(--ink);
+    background: var(--yellow);
+    box-shadow: 4px 4px 0 var(--ink);
+    cursor: pointer;
+  }
+  button:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+  button.calm { background: var(--snow); }
+  .meter { font-weight: 800; min-width: 10em; text-align: center; }
+  #msg { text-align: center; min-height: 1.5em; font-weight: 700; margin: 0; }
+
+  footer { text-align: center; font-size: 12px; opacity: .75; }
+  footer s { opacity: .7; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<canvas id="rain" aria-hidden="true"></canvas>
+
+<main>
+  <header>
+    <span class="kicker">超！バイブコーディング 公式（非公式）</span>
+    <h1 id="title">Yamagata-inaka</h1>
+    <p class="sub">山形 × 田舎 × <b>動いた、なぜ？</b></p>
+  </header>
+
+  <div class="tape" aria-hidden="true"><div id="tape1"></div></div>
+
+  <section class="stickers" id="stickers" aria-label="ステッカー"></section>
+
+  <div class="tape rev" aria-hidden="true"><div id="tape2"></div></div>
+
+  <section class="term" aria-label="寮サーバーのログ（雰囲気）">
+    <div class="term-bar"><i></i><i></i><i></i>yamagata@dorm-server: ~</div>
+    <pre id="log"></pre>
+  </section>
+
+  <section class="panel">
+    <button id="more">カオス度 +1</button>
+    <span class="meter" id="meter">カオス度: 1</span>
+    <button id="calm" class="calm">落ち着く</button>
+  </section>
+  <p id="msg">画面のどこかをタップすると何かが出ます。</p>
+
+  <footer>
+    <s>Hello World!</s>（初代 index.html・在任期間 一瞬）<br>
+    © Yamagata-inaka ／ 最寄りの何かまで遠い
+  </footer>
+</main>
+
+<script>
+// ===== 素材 =====
+const ITEMS = ['🍒','🍒','🍐','🌾','🐄','🐸','🚜','❄️','🍲','🌽','🦌','🐻','💻','🔑','⚡','0x','{}','$_','flag','404','🌀'];
+const TITLES = ['Yamagata-inaka','山形いなか','YAMAGATA_INAKA','やまがた田舎','yamagata.inaka()','ﾔﾏｶﾞﾀｲﾅｶ','Y4M4G4T4-1N4K4','山形-inaka'];
+
+const STICKERS = [
+  ['🍒', 'さくらんぼは正義'],
+  ['4.2km', '最寄りのコンビニまで'],
+  ['🍲', '芋煮会の鍋は大きいほど強い'],
+  ['🖥️', '寮サーバー稼働中（たぶん）'],
+  ['flag{', 'inaka_is_not_a_bug}'],
+  ['❄️', '冬は雪かきから始まる'],
+  ['🤖', 'コードは AI、責任は自分'],
+  ['🌾', '田んぼの水位：異常なし'],
+  ['CP932', '文字化けしたらまずここを疑う'],
+  ['🍐', 'ラ・フランスは熟すのを待て'],
+  ['git', 'コミットは動いたときだけ'],
+  ['🐸', 'カエルの声で寝られない夜'],
+];
+
+const TAPE1 = '★ 山形 ★ 田舎 ★ 超！バイブコーディング ★ CTF ★ 芋煮 ★ さくらんぼ ★ 寮サーバー ★ 雪 ★ Hello World! ★ ';
+const TAPE2 = '>>> 動いた >>> なぜ動いた >>> 動かない >>> なぜ動かない >>> 文字化け >>> UTF-8 にした >>> 直った >>> ';
+
+const LOGS = [
+  ['$ ssh yamagata@dorm-server', ''],
+  ['[INFO] 田んぼの水位: 正常', ''],
+  ['[INFO] さくらんぼ 熟度 87%', ''],
+  ['[WARN] 雪が積もっています（前回も）', 'warn'],
+  ['$ git commit -m "動いた"', ''],
+  ['[INFO] 芋煮 鍋温度 98℃', ''],
+  ['[WARN] ブレーカー残量が少なくなっています', 'warn'],
+  ['$ python3 solve.py', ''],
+  ['flag{y4m4g4t4_1n4k4_ch40s}', 'flag'],
+  ['[INFO] カエル: 合唱中 (n=∞)', ''],
+  ['[WARN] 最寄り駅まで 遠い', 'warn'],
+  ['$ claude "いい感じにして"', ''],
+  ['[INFO] いい感じになりました（自己申告）', ''],
+  ['[ERROR] UnicodeDecodeError: cp932', 'warn'],
+  ['$ chcp 65001', ''],
+  ['[INFO] 熊の目撃情報: なし（今のところ）', ''],
+  ['$ sudo apt install 都会', ''],
+  ['E: パッケージ 都会 が見つかりません', 'warn'],
+];
+
+const $ = (id) => document.getElementById(id);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let chaos = 1;
+
+// ===== テープ（2 回並べてループを継ぎ目なしにする） =====
+$('tape1').textContent = TAPE1.repeat(4) + TAPE1.repeat(4);
+$('tape2').textContent = TAPE2.repeat(3) + TAPE2.repeat(3);
+
+// ===== ステッカー =====
+for (const [big, small] of STICKERS) {
+  const el = document.createElement('div');
+  el.className = 'sticker';
+  el.style.setProperty('--r', (Math.random() * 10 - 5).toFixed(1) + 'deg');
+  el.style.background = ['#fffbe8', '#ffe1e6', '#e6ffd1', '#e3f3ff', '#fff3b0'][Math.floor(Math.random() * 5)];
+  el.innerHTML = `<span class="big"></span><span></span>`;
+  el.children[0].textContent = big;
+  el.children[1].textContent = small;
+  // クリックで角度をふり直す
+  el.addEventListener('click', () => {
+    el.style.setProperty('--r', (Math.random() * 30 - 15).toFixed(1) + 'deg');
+  });
+  $('stickers').appendChild(el);
+}
+
+// ===== タイトルのグリッチ =====
+function glitchTitle() {
+  const t = $('title');
+  if (Math.random() < 0.25 + chaos * 0.1) {
+    t.textContent = TITLES[Math.floor(Math.random() * TITLES.length)];
+    // 少し経ったら元に戻す
+    setTimeout(() => { t.textContent = 'Yamagata-inaka'; }, 180 + Math.random() * 400);
+  }
+  setTimeout(glitchTitle, Math.max(250, 1600 - chaos * 250));
+}
+if (!reduced) glitchTitle();
+
+// ===== ターミナル（1 文字ずつ打つ） =====
+const log = $('log');
+const MAX_LINES = 9;
+let logIndex = 0;
+function typeLine() {
+  const [text, cls] = LOGS[logIndex % LOGS.length];
+  logIndex++;
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  log.appendChild(line);
+  while (log.children.length > MAX_LINES) log.removeChild(log.firstChild);
+  let i = 0;
+  const speed = Math.max(8, 40 - chaos * 6);
+  (function step() {
+    line.textContent = text.slice(0, ++i);
+    if (i < text.length) setTimeout(step, speed);
+    else setTimeout(typeLine, 500 + Math.random() * 900);
+  })();
+}
+typeLine();
+
+// ===== 背景キャンバス =====
+const cv = $('rain');
+const ctx = cv.getContext('2d');
+let W = 0, H = 0;
+const parts = [];
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+function spawn(x, y, burst) {
+  const ch = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+  const a = Math.random() * Math.PI * 2;
+  const sp = burst ? 3 + Math.random() * 6 : 0;
+  parts.push({
+    ch, x, y,
+    vx: burst ? Math.cos(a) * sp : (Math.random() - .5) * .6,
+    vy: burst ? Math.sin(a) * sp - 3 : 0.6 + Math.random() * 1.4,
+    rot: Math.random() * 6, vr: (Math.random() - .5) * .1 * (burst ? 3 : 1),
+    size: 16 + Math.random() * 22,
+    life: burst ? 120 : Infinity,
+  });
+}
+
+function tick() {
+  // 降らせる量はカオス度に比例。上限は端末負荷対策
+  const limit = 25 + chaos * 30;
+  if (parts.length < limit && Math.random() < 0.15 * chaos) spawn(Math.random() * W, -30, false);
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if (p.life !== Infinity) { p.vy += 0.15; p.life--; }
+    p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+    if (p.y > H + 40 || p.life <= 0) { parts.splice(i, 1); continue; }
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.globalAlpha = p.life === Infinity ? 0.55 : Math.min(1, p.life / 40);
+    ctx.font = `bold ${p.size}px "Segoe UI Emoji", "Apple Color Emoji", monospace`;
+    ctx.fillStyle = '#1a3a12';
+    ctx.fillText(p.ch, 0, 0);
+    ctx.restore();
+  }
+  requestAnimationFrame(tick);
+}
+if (!reduced) tick();
+
+// タップした場所から噴き出す（ボタンやステッカーの上は除く）
+addEventListener('pointerdown', (e) => {
+  if (reduced || e.target.closest('button, .sticker')) return;
+  for (let i = 0; i < 12 + chaos * 4; i++) spawn(e.clientX, e.clientY, true);
+});
+
+// ===== カオス度 =====
+const MSGS = [
+  '',
+  '画面のどこかをタップすると何かが出ます。',
+  'カエルが増えてきました。',
+  '色がおかしくなってきました。',
+  'ステッカーが勝手に動き出しました。',
+  'これ以上は寮のブレーカーが落ちます。',
+];
+function setChaos(n) {
+  chaos = Math.max(1, Math.min(5, n));
+  document.body.className = Array.from({ length: chaos }, (_, i) => 'c' + (i + 1)).join(' ');
+  $('meter').textContent = 'カオス度: ' + chaos + (chaos === 5 ? '（MAX）' : '');
+  $('msg').textContent = MSGS[chaos];
+}
+$('more').addEventListener('click', () => {
+  if (chaos === 5) { $('msg').textContent = 'もう上がりません。ブレーカーを見てきてください。'; return; }
+  setChaos(chaos + 1);
+});
+$('calm').addEventListener('click', () => {
+  setChaos(1);
+  parts.length = 0;
+  $('msg').textContent = '深呼吸しました。田んぼの音だけが聞こえます。';
+});
+setChaos(1);
+</script>
+</body>
+</html>
