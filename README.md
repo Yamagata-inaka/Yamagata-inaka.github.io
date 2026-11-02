@@ -1,0 +1,1 @@
+# Yamagata-inaka.github.io
