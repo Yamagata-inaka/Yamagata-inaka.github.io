@@ -116,6 +116,25 @@
   body.c4 .sticker { animation: wobble 1.6s ease-in-out infinite alternate; }
   @keyframes wobble { to { transform: rotate(calc(var(--r, 0deg) * -1)) translateY(-4px); } }
 
+  /* 学習ツール集へのリンク */
+  .toolink {
+    align-self: center;
+    display: block;
+    max-width: 100%;
+    padding: 14px 22px;
+    background: var(--yellow);
+    color: var(--ink);
+    border: 3px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+    text-align: center;
+    text-decoration: none;
+    transform: rotate(1deg);
+    transition: transform .2s;
+  }
+  .toolink:hover, .toolink:focus-visible { transform: rotate(0deg) scale(1.04); }
+  .toolink b { display: block; font-size: 24px; font-weight: 900; line-height: 1.3; }
+  .toolink span { font-size: 14px; font-weight: 700; }
+
   /* ターミナル */
   .term {
     background: var(--term); color: var(--termfg);
@@ -179,6 +198,8 @@
     <h1 id="title">Yamagata-inaka</h1>
     <p class="sub">山形 × 田舎 × <b>動いた、なぜ？</b></p>
   </header>
+
+  <a class="toolink" href="/study-tools/"><b>学習ツール集 →</b><span>ルータ設定・サブネット計算・基本情報 科目B</span></a>
 
   <div class="tape" aria-hidden="true"><div id="tape1"></div></div>
 
@@ -362,7 +383,7 @@ if (!reduced) tick();
 
 // タップした場所から噴き出す（ボタンやステッカーの上は除く）
 addEventListener('pointerdown', (e) => {
-  if (reduced || e.target.closest('button, .sticker')) return;
+  if (reduced || e.target.closest('a, button, .sticker')) return;
   for (let i = 0; i < 12 + chaos * 4; i++) spawn(e.clientX, e.clientY, true);
 });
 
